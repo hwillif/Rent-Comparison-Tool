@@ -13,31 +13,6 @@ df = load_data()
 
 feature_cols = ['bedrooms', 'bathrooms', 'square_feet', 'pets?', 'latitude', 'longitude']
 
-#kmeans
-@st.cache_data
-def cluster_data(df, n_clusters=50):
-    X = df[feature_cols]
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-    clusters = kmeans.fit_predict(X_scaled)
-    df['cluster'] = clusters
-    return df, kmeans, scaler
-
-#linreg
-@st.cache_data
-def train_regression_model(cluster_df):
-    cluster_df = cluster_df.dropna(subset=['price'])
-    
-    X = cluster_df[feature_cols]
-    y = cluster_df['price']
-    
-    # Train a linear regression model
-    model = LinearRegression()
-    model.fit(X, y)
-    return model
-
 
 # Page Title
 st.title('Rent Comparison Tool')
