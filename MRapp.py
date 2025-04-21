@@ -15,7 +15,7 @@ feature_cols = ['bedrooms', 'bathrooms', 'square_feet', 'pets?', 'latitude', 'lo
 
 #kmeans
 @st.cache_data
-def cluster_data(df, n_clusters=5):
+def cluster_data(df, n_clusters=50):
     X = df[feature_cols]
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
