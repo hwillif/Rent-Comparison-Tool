@@ -11,60 +11,85 @@ def load_data():
 
 df = load_data()
 
-feature_cols = ['bedrooms', 'bathrooms', 'square_feet', 'pets?', 'latitude', 'longitude']
+feature_cols = ['bedrooms', 'bathrooms', 'square_feet', 'pets?','latitude','longitude']
+
+#kmeans
+@st.cache_data
+def cluster_data(df, n_clusters=5):
+    X = df[feature_cols]
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    clusters = kmeans.fit_predict(X_scaled)
+    df['cluster'] = clusters
+    return df, kmeans, scaler
+
+#linreg
+@st.cache_data
+def train_regression_model(cluster_df):
+    cluster_df = cluster_df.dropna(subset=['price'])
+    
+    X = cluster_df[feature_cols]
+    y = cluster_df['price']
+    
+    model = LinearRegression()
+    model.fit(X, y)
+    return model
 
 
-# Page Title
 st.title('Rent Comparison Tool')
 st.markdown("Hayden Williford, Matthew Rostar, Jack Callahan, Lillian Bowling")
 
 st.header("Your Apartment Details:")
-
 col1, col2, col3 = st.columns(3)
+
 with col1:
-    # User Rent Text Box
     user_rent = st.text_input("Rent Amount?")
+    if user_rent.isdigit():
+        user_rent = int(user_rent)
+    else:
+        user_rent = None
 
-    # Display the Rent value and restrict text to numbers
-    if user_rent:
-        if user_rent.isdigit():
-            number = int(user_rent)
-            st.write(f"Rent Amount: ${number}")
-        else:
-            st.error("Please enter a valid number")
-
-    #Pets Allowed Drop Down
-    user_pets = st.selectbox("Pets Allowed?", 
-                             ("No","Yes"), 
-                             index = None)
-    if user_pets != None:
-        st.write(f"Pets Allowed: {user_pets}")
-
+    user_pets = st.selectbox("Pets Allowed?", ("No", "Yes"), index=None)
 
 with col2:
-    # User Bedrooms Text Box
     user_bedrooms = st.text_input("Number of Bedrooms?")
-
-    # Display the Bedrooms value and restrict text to numbers
-    if user_bedrooms:
-        if user_bedrooms.isdigit():
-            number = int(user_bedrooms)
-            st.write(f"Number of Bedrooms: {number}")
-        else:
-            st.error("Please enter a valid number")
+    if user_bedrooms.isdigit():
+        user_bedrooms = int(user_bedrooms)
+    else:
+        user_bedrooms = None
 
 with col3:
-    # User Bathrooms Text Box
     user_bathrooms = st.text_input("Number of Bathrooms?")
+    try:
+        user_bathrooms = float(user_bathrooms)
+    except ValueError:
+        user_bathrooms = None
 
-    # Display the Number of Bathrooms value and restrict values
-    if user_bathrooms :
-        try:
-            value = float(user_bathrooms)
-            if 0 <= value <= 10 and (value * 2).is_integer():
-                st.write(f"Number of Bedrooms: {value}")
-            else:
-                st.error("Number must be between 0 and 10, in 0.5 steps.")
-        except ValueError:
-            st.error("Please enter a valid number.")
+#what happens when user clicks on the predict rent button
+if st.button("Predict Rent"):
 
+    df_filtered = df[df['cityname'] == "Charlotte"]  # filter by user-selected city (add input for city)
+    
+    user_data = {
+        'bedrooms': user_bedrooms,
+        'bathrooms': user_bathrooms,
+        'square_feet': user_rent,  
+        'pets?': 1 if user_pets == "Yes" else 0,
+        'latitude':35.2016, #took random coordinates from charlotte apartment for placeholder
+        'longitude':-80.8124 
+    }
+    
+    user_df = pd.DataFrame([user_data])
+    
+    df_filtered = pd.concat([df_filtered, user_df], ignore_index=True)
+    df_filtered, kmeans, scaler = cluster_data(df_filtered)
+    
+    user_cluster = kmeans.predict(scaler.transform(user_df[feature_cols]))
+    similar_apartments = df_filtered[df_filtered['cluster'] == user_cluster[0]]
+    
+    model = train_regression_model(similar_apartments)
+    predicted_rent = model.predict(user_df[feature_cols])
+    
+    st.write(f"Predicted Rent for your apartment: ${predicted_rent[0]:,.2f}") 
