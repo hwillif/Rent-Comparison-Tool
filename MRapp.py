@@ -45,7 +45,7 @@ st.header("Your Apartment Details:")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    user_rent = st.text_input("Rent Amount?")
+    user_rent = st.text_input("Square FT")
     if user_rent.isdigit():
         user_rent = int(user_rent)
     else:
