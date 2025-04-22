@@ -75,7 +75,7 @@ if st.button("Predict Rent"):
     user_data = {
         'bedrooms': user_bedrooms,
         'bathrooms': user_bathrooms,
-        'square_feet': user_rent,  
+        'square_feet': user_rent,  #not sure what rent amount is supposed to mean, but used square ft
         'pets?': 1 if user_pets == "Yes" else 0,
         'latitude':35.2016, #took random coordinates from charlotte apartment for placeholder
         'longitude':-80.8124 
