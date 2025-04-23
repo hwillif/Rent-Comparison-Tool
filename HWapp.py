@@ -21,6 +21,10 @@ st.header("Your Apartment Details:")
 # Create Fake Columns to get city name
 city_names = apartments['cityname']
 
+# Create Global Variables
+user_cluster = 0
+
+
 col12, col22, col32 = st.columns(3)
 with col12:
     # Get User City Name
@@ -55,6 +59,7 @@ with col1:
         if user_sqft.isdigit():
             number = int(user_sqft)
             st.write(f"Square Footage: {user_sqft} ft²")
+            user_sqft = float(user_sqft)
         else:
             st.error("Please enter a valid whole number") 
 
@@ -68,6 +73,7 @@ with col2:
         if user_bedrooms.isdigit():
             number = int(user_bedrooms)
             st.write(f"Number of Bedrooms: {number}")
+            user_bedrooms = int(user_bedrooms)
         else:
             st.error("Please enter a valid number")
 
@@ -89,6 +95,7 @@ with col3:
             value = float(user_bathrooms)
             if 0 <= value <= 10 and (value * 2).is_integer():
                 st.write(f"Number of Bathrooms: {value}")
+                user_bathrooms = float(user_bathrooms)
             else:
                 st.error("Number must be between 0 and 10, in 0.5 steps.")
         except ValueError:
@@ -120,8 +127,6 @@ train_df = pd.concat([user, filtered_apartments]).reset_index(drop=True)
 # USER INDEX IS 0 (FIRST ROW IN TRAIN DF)
 record_index = 0
 
-# Create Global Variables
-user_cluster = 0
 
 # Filter train_df to only the city the user entered
 train_df = train_df[train_df['cityname'] == user_city].reset_index(drop=True)
@@ -134,9 +139,9 @@ st.write(train_df.head())
 kmeans_features = ['bedrooms', 'bathrooms', 'square_feet', 'pets?']
 
 # Fix Data Types of Bedrooms, Bathrooms and Square Feet
-train_df['bedrooms'] = train_df['bedrooms'].astype(int)
-train_df['bathrooms'] = train_df['bathrooms'].astype(float)
-train_df['square_feet'] = train_df['square_feet'].astype(float)
+# train_df['bedrooms'] = train_df['bedrooms'].astype(int)
+# train_df['bathrooms'] = train_df['bathrooms'].astype(float)
+# train_df['square_feet'] = train_df['square_feet'].astype(float)
 
 # Create Function to do Kmeans on Filtered dataframe
 def run_kmeans(df, columns, n_clusters = 5):
