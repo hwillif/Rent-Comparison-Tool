@@ -70,7 +70,7 @@ with col2:
 
     # Display the Bedrooms value and restrict text to numbers
     if user_bedrooms:
-        if user_bedrooms.isdigit():
+        if user_bedrooms.isdigit() and 0 <= user_bedrooms <= 4:
             number = int(user_bedrooms)
             st.write(f"Number of Bedrooms: {number}")
             user_bedrooms = int(user_bedrooms)
@@ -93,7 +93,7 @@ with col3:
     if user_bathrooms :
         try:
             value = float(user_bathrooms)
-            if 0 <= value <= 10 and (value * 2).is_integer():
+            if 0 <= value <= 4 and (value * 2).is_integer():
                 st.write(f"Number of Bathrooms: {value}")
                 user_bathrooms = float(user_bathrooms)
             else:
