@@ -127,17 +127,16 @@ user_cluster = 0
 train_df = train_df[train_df['cityname'] == user_city].reset_index(drop=True)
 train_df = train_df.drop(columns = ['cityname', 'price'], axis=1)
 
-# Fix Data Types of Bedrooms, Bathrooms and Square Feet
-train_df['bedrooms'] = train_df['bedrooms'].astype(int)
-train_df['bathrooms'] = train_df['bedrooms'].astype(float)
-train_df['square_feet'] = train_df['square_feet'].astype(float)
-
 # Display Dataset Before Kmeans
 st.write('Dataset of User Entered Data and Apartment Dataset')
 st.write(train_df.head())
 
 kmeans_features = ['bedrooms', 'bathrooms', 'square_feet', 'pets?']
 
+# Fix Data Types of Bedrooms, Bathrooms and Square Feet
+train_df['bedrooms'] = train_df['bedrooms'].astype(int)
+train_df['bathrooms'] = train_df['bathrooms'].astype(float)
+train_df['square_feet'] = train_df['square_feet'].astype(float)
 
 # Create Function to do Kmeans on Filtered dataframe
 def run_kmeans(df, columns, n_clusters = 5):
