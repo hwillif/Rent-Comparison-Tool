@@ -168,6 +168,6 @@ if st.button("Find Similar Apartments"):
     st.write('Dataframe after Clustering')
     st.write(kmeans_results)
 
-    st.write("Top 5 Recommendations")
+    st.header("Top 5 Recommendations")
     st.write(kmeans_results.sort_values(by='distance_from_user').head(5))
 
