@@ -214,12 +214,15 @@ if st.button("Find Similar Apartments"):
     st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip))
 
 lm_features = train_lm_df.columns.drop('title').tolist()
+train_lm_df = train_lm_df.drop(index=0)
+train_lm_df = train_lm_df.drop(columns = ['title'], axis=1)
+st.write(train_lm_df)
 
 # Create Function for Linear Regression
-def train_regression_model(df):
+def train_regression_model(df, ):
     df = df.dropna(subset=['price'])
 
-    X = df[[lm_features]]
+    X = df[lm_features]
     y = df['price']
 
     model = LinearRegression()
@@ -229,4 +232,15 @@ def train_regression_model(df):
 
 # Create Buttom for "If my rent is a good deal?"
 if st.button("Is my Apartment a Good Deal?"):
-    st.write(train_regression_model(train_lm_df))
+    # Make prediction
+    user_input = pd.DataFrame({
+        'price': [user_rent],
+        'sqft': [user_sqft],
+        'pets?': [user_pets]
+        'bedrooms': [user_bathrooms],
+        'bathrooms': [user_bedrooms],
+    })
+
+    
+    prediction = train_regression_model(train_lm_df).predict(user_input)[0]
+    st.write(f"### 💰 Predicted Price: ${prediction:,.2f}")
