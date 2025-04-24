@@ -72,7 +72,7 @@ with col2:
     if user_bedrooms:
         try:
             value = float(user_bedrooms)
-            if 0 <= value <= 4 and (value * 2).is_integer():
+            if 0 <= value <= 4:
                 st.write(f"Number of Bedrooms: {value}")
                 user_bedrooms = float(user_bedrooms)
             else:
