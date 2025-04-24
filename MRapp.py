@@ -199,8 +199,8 @@ if st.button("Find Similar Apartments"):
         "ScatterplotLayer",
         data=top5_with_coords,
         get_position='[longitude, latitude]',
-        get_radius=100,
-        get_fill_color='[200, 30, 0, 160]',
+        get_radius=400,
+        get_fill_color='[255, 255, 0, 255]',
         pickable=True,
     )
 
@@ -213,4 +213,12 @@ if st.button("Find Similar Apartments"):
         pitch=0
     )
 
-    st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip))
+    deck = pdk.Deck(
+        layers=[layer],
+        initial_view_state=view_state,
+        tooltip=tooltip,
+        map_style='mapbox://styles/mapbox/satellite-v9'
+    )
+
+    st.pydeck_chart(deck)
+
