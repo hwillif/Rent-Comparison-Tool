@@ -70,12 +70,15 @@ with col2:
 
     # Display the Bedrooms value and restrict text to numbers
     if user_bedrooms:
-        if user_bedrooms.isdigit() and 0 <= user_bedrooms <= 4:
-            number = int(user_bedrooms)
-            st.write(f"Number of Bedrooms: {number}")
-            user_bedrooms = int(user_bedrooms)
-        else:
-            st.error("Please enter a valid number")
+        try:
+            value = float(user_bedrooms)
+            if 0 <= value <= 4 and (value * 2).is_integer():
+                st.write(f"Number of Bedrooms: {value}")
+                user_bedrooms = float(user_bedrooms)
+            else:
+                st.error("Number must be between 0 and 4")
+        except ValueError:
+            st.error("Please enter a valid number.")
 
     #Pets Allowed Drop Down
     user_pets = st.selectbox("Pets Allowed?", 
@@ -102,7 +105,7 @@ with col3:
             st.error("Please enter a valid number.")
         
 # Feature Names of Training Data
-features = ['title', 'cityname', 'price', 'bedrooms', 'bathrooms', 'square_feet', 'pets?']
+features = ['title', 'cityname', 'price', 'bedrooms', 'bathrooms', 'square_feet', 'pets?','longitude', 'latitude']
 
 # Create User Dataframe
 user = pd.DataFrame({
@@ -112,7 +115,9 @@ user = pd.DataFrame({
     "bedrooms": [user_bedrooms],
     "bathrooms": [user_bathrooms],
     "square_feet": [user_sqft],
-    "pets?": [user_pets]
+    "pets?": [user_pets],
+    "longitude": [None],
+    "latitude": [None]
 })
 
 
@@ -127,10 +132,16 @@ train_df = pd.concat([user, filtered_apartments]).reset_index(drop=True)
 # USER INDEX IS 0 (FIRST ROW IN TRAIN DF)
 record_index = 0
 
+# Create Dataframe for Map
+map_df = train_df[train_df['cityname'] == user_city].reset_index(drop=True)
+map_df = map_df.drop(columns = ['cityname', 'price', 'bedrooms', 'bathrooms', 'square_feet', 'pets?'], axis=1)
+st.write("Dataset of The Map Data")
+st.write(map_df)
+
 
 # Filter train_df to only the city the user entered
 train_df = train_df[train_df['cityname'] == user_city].reset_index(drop=True)
-train_df = train_df.drop(columns = ['cityname', 'price'], axis=1)
+train_df = train_df.drop(columns = ['cityname', 'price','longitude','latitude'], axis=1)
 
 # Display Dataset Before Kmeans
 st.write('Dataset of User Entered Data and Apartment Dataset')
@@ -138,10 +149,6 @@ st.write(train_df.head())
 
 kmeans_features = ['bedrooms', 'bathrooms', 'square_feet', 'pets?']
 
-# Fix Data Types of Bedrooms, Bathrooms and Square Feet
-# train_df['bedrooms'] = train_df['bedrooms'].astype(int)
-# train_df['bathrooms'] = train_df['bathrooms'].astype(float)
-# train_df['square_feet'] = train_df['square_feet'].astype(float)
 
 # Create Function to do Kmeans on Filtered dataframe
 def run_kmeans(df, columns, n_clusters = 5):
