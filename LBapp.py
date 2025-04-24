@@ -56,4 +56,19 @@ with col3:
                 st.error("Number must be between 0 and 10, in 0.5 steps.")
         except ValueError:
             st.error("Please enter a valid number.")
-        
+
+     ######################################   
+import streamlit as st
+import pandas as pd
+
+if st.button ('apartment button')
+    st.write('this is where it is!')
+  data = {
+    'LAT': [39.3335, 35.2185, 32.7731, 42.091, 39.6825, 42.68, 40.033, 40.4837],
+    'LON': [-76.6209, -80.8286, -117.1836, -71.264, -104.9635, -73.83, -75.3367, -111.9795],
+    
+      }
+
+  df = pd.DataFrame(data)
+  st.write("Location of Apartment", df)
+  st.map(df)
