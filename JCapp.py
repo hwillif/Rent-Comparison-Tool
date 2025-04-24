@@ -39,3 +39,13 @@ def train_regression_model(cluster_df):
     model = LinearRegression()
     model.fit(X, y)
     return model
+
+    
+# Make prediction
+user_input = pd.DataFrame({
+    'bedrooms': [bedrooms],
+    'bathrooms': [bathrooms],
+    'sqft': [sqft]
+})
+prediction = model.predict(user_input)[0]
+st.write(f"### 💰 Predicted Price: ${prediction:,.2f}")
