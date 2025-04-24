@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import streamlit as st
+import pydeck as pdk
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
@@ -23,7 +24,6 @@ city_names = apartments['cityname']
 
 # Create Global Variables
 user_cluster = 0
-
 
 col12, col22, col32 = st.columns(3)
 with col12:
@@ -72,7 +72,7 @@ with col2:
     if user_bedrooms:
         try:
             value = float(user_bedrooms)
-            if 0 <= value <= 4:
+            if 1 <= value <= 4:
                 st.write(f"Number of Bedrooms: {value}")
                 user_bedrooms = float(user_bedrooms)
             else:
@@ -96,7 +96,7 @@ with col3:
     if user_bathrooms :
         try:
             value = float(user_bathrooms)
-            if 0 <= value <= 4 and (value * 2).is_integer():
+            if 1 <= value <= 4 and (value * 2).is_integer():
                 st.write(f"Number of Bathrooms: {value}")
                 user_bathrooms = float(user_bathrooms)
             else:
@@ -120,10 +120,8 @@ user = pd.DataFrame({
     "latitude": [None]
 })
 
-
 # Correct User_Pets from Yes and No to 1 and 0
 user['pets?'] = user['pets?'].replace({'Yes': 1, 'No': 0})
-
 
 # Make Training Dataset
 filtered_apartments = apartments[features]
@@ -135,20 +133,22 @@ record_index = 0
 # Create Dataframe for Map
 map_df = train_df[train_df['cityname'] == user_city].reset_index(drop=True)
 map_df = map_df.drop(columns = ['cityname', 'price', 'bedrooms', 'bathrooms', 'square_feet', 'pets?'], axis=1)
-st.write("Dataset of The Map Data")
-st.write(map_df)
 
 
 # Filter train_df to only the city the user entered
 train_df = train_df[train_df['cityname'] == user_city].reset_index(drop=True)
+train_lm_df = train_df.drop(columns = ['cityname', 'longitude','latitude'], axis=1)
 train_df = train_df.drop(columns = ['cityname', 'price','longitude','latitude'], axis=1)
+
+# Add One Hot Encoding For Bedrooms
+train_dummies_df = pd.get_dummies(train_df, columns=['bedrooms', 'bathrooms'], drop_first=True, dtype=int)
+train_lm_df = pd.get_dummies(train_lm_df, columns=['bedrooms', 'bathrooms'], drop_first=True, dtype=int)
 
 # Display Dataset Before Kmeans
 st.write('Dataset of User Entered Data and Apartment Dataset')
-st.write(train_df.head())
+st.write(train_dummies_df.head())
 
-kmeans_features = ['bedrooms', 'bathrooms', 'square_feet', 'pets?']
-
+kmeans_features = train_dummies_df.columns.drop('title').tolist()
 
 # Create Function to do Kmeans on Filtered dataframe
 def run_kmeans(df, columns, n_clusters = 5):
@@ -175,10 +175,58 @@ def run_kmeans(df, columns, n_clusters = 5):
 
 # Create a Button to do K Means Clustering
 if st.button("Find Similar Apartments"):
-    kmeans_results = run_kmeans(train_df, columns= kmeans_features, n_clusters= 5)
+    kmeans_results = run_kmeans(train_dummies_df, columns= kmeans_features, n_clusters= 5)
     st.write('Dataframe after Clustering')
     st.write(kmeans_results)
 
+    top5 = kmeans_results.sort_values(by='distance_from_user').head(5)
+    top5 = pd.merge(top5[['title', 'square_feet', 'pets?']], train_df[['bedrooms', 'bathrooms']], left_index=True, right_index=True, how='left')
     st.header("Top 5 Recommendations")
-    st.write(kmeans_results.sort_values(by='distance_from_user').head(5))
+    st.write(top5)
 
+    top5_index = top5.index.tolist()
+    top5_with_coords = map_df.iloc[top5_index]
+    top5_with_coords = top5_with_coords.dropna(subset=['latitude', 'longitude'])
+
+
+    st.header("📍 Map of Top 5 Similar Apartments")
+
+    top5_with_coords = top5_with_coords.dropna(subset=['latitude', 'longitude'])
+
+    layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=top5_with_coords,
+        get_position='[longitude, latitude]',
+        get_radius=100,
+        get_fill_color='[200, 30, 0, 160]',
+        pickable=True,
+    )
+
+    tooltip = {"html": "<b>{title}</b>", "style": {"color": "white"}}
+
+    view_state = pdk.ViewState(
+        latitude=top5_with_coords['latitude'].mean(),
+        longitude=top5_with_coords['longitude'].mean(),
+        zoom=11,
+        pitch=0
+    )
+
+    st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip))
+
+lm_features = train_lm_df.columns.drop('title').tolist()
+
+# Create Function for Linear Regression
+def train_regression_model(df):
+    df = df.dropna(subset=['price'])
+
+    X = df[[lm_features]]
+    y = df['price']
+
+    model = LinearRegression()
+    model.fit(X, y)
+    return model
+
+
+# Create Buttom for "If my rent is a good deal?"
+if st.button("Is my Apartment a Good Deal?"):
+    st.write(train_regression_model(train_lm_df))
