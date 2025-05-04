@@ -6,6 +6,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import euclidean_distances
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn import tree
 from scipy.spatial.distance import euclidean
 
 # Import Cleaned Data
@@ -72,7 +75,7 @@ with col2:
     if user_bedrooms:
         try:
             value = float(user_bedrooms)
-            if 1 <= value <= 4:
+            if 1 <= value <= 4 and value.is_integer:
                 st.write(f"Number of Bedrooms: {value}")
                 user_bedrooms = float(user_bedrooms)
             else:
@@ -152,25 +155,54 @@ def multi_reg(df, target):
     x_user = user.drop(columns = [target])
     y_user = user[target]
 
-    x_train = train.drop(columns = [target])
-    y_train = train[target]
+    x = train.drop(columns = [target])
+    y = train[target]
 
+    x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=.3, random_state=0)
+
+    # MultiVariate Linear Regression
     model = LinearRegression()
-    model.fit(x_train, y_train)
+    model.fit(x_train,y_train)
 
-    prediction = model.predict(x_user)
+    y_pred_lr = model.predict(x_test)
+    mse_lr = mean_squared_error(y_test, y_pred_lr)
 
-    return prediction, y_user
+    prediction_lr = model.predict(x_user)
+
+    # Decision Tree
+    dtree = tree.DecisionTreeRegressor(max_depth=4)
+    dtree.fit(x_train, y_train)
+
+    y_pred_dt = dtree.predict(x_test)
+    mse_dt = mean_squared_error(y_test, y_pred_dt)
+
+    prediction_dt = dtree.predict(x_user)
+
+    # Pick Best Model
+    if mse_lr < mse_dt:
+        prediction = prediction_lr
+        model_used = "Multivariate Regression"
+    elif mse_dt < mse_lr:
+        prediction = prediction_dt
+        model_used = "Decision Tree"
+
+    return prediction, y_user, model_used
 
 # Create Button to Predict Rent
 if st.button("Is my Apartment a Good Deal?"):
-    prediction, y_user = multi_reg(multi_reg_df, 'price')
-    st.subheader("Estimate Rent Based on Details")
+    prediction, y_user, model_used = multi_reg(multi_reg_df, 'price')
+    st.subheader("Estimation of Rent Based on Details")
     st.write(f"Estimated Rent: {round(prediction.item(),2)}")
+    st.write(f"Model Used: {model_used}")
     st.subheader("Actual Rent Paid")
     st.write(f"Actual Rent: {y_user.tolist()[0]}")
 
-    print(type(prediction))
+    
+
+    if float(y_user.item()) + 100 < float(prediction):
+        st.subheader("Your Current Apartment is a Good Deal compared to similiar apartments", divider = True)
+    elif float(y_user.item()) - 100 > float(prediction):
+        st.subheader("Your Current Apartment is Overpriced compared to similiar apartments", divider = True)
 
 #################### Kmeans ################################################################
 
@@ -209,19 +241,19 @@ if st.button("Find Similar Apartments"):
     # st.write('Dataframe after Clustering')
     # st.write(kmeans_results)
 
-    top5 = kmeans_results.sort_values(by='distance_from_user').head(5)
-    top5 = pd.merge(top5[['title', 'square_feet', 'pets?']], train_df[['bedrooms', 'bathrooms']], left_index=True, right_index=True, how='left')
+    top5 = kmeans_results.sort_values(by='distance_from_user').head(6)
+    top5 = top5.iloc[1:]
+    top5 = pd.merge(top5[['title', 'square_feet', 'pets?']], train_df[['bedrooms', 'bathrooms', 'price']], left_index=True, right_index=True, how='left')
+    top5['price'] = top5['price'].apply(lambda x: '${:.0f}'.format(x))
     st.header("Top 5 Recommendations")
-    st.write(top5)
+    st.dataframe(top5)
 
     top5_index = top5.index.tolist()
     top5_with_coords = map_df.iloc[top5_index]
     top5_with_coords = top5_with_coords.dropna(subset=['latitude', 'longitude'])
 
 
-    st.header("📍 Map of Top 5 Similar Apartments")
-
-    top5_with_coords = top5_with_coords.dropna(subset=['latitude', 'longitude'])
+    st.header("📍 Map of Top 5 Similar Apartments", divider = True)
 
     layer = pdk.Layer(
         "ScatterplotLayer",
